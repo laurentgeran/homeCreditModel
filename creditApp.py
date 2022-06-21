@@ -1,4 +1,4 @@
-from pydantic import BaseModel, create_model
+from pydantic import create_model
 import dataAnalysis
 
 #sample = dataAnalysis.loadData('featSelect_X',id= 100002, index = True).iloc[0,:].to_dict()
