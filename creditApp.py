@@ -1,13 +1,8 @@
-import sqlite3
 from pydantic import BaseModel, create_model
-import preproFunc
+import dataAnalysis
 
-DB_FILE = 'D:\projects\openclassrooms\projets\P7_geran_laurent\homecredit_data\db.db'
-
-# creating cursor
-con = sqlite3.connect(DB_FILE)
-
-sample = preproFunc.localLoad('featSelect_X',con, index = True).iloc[0,:].to_dict()
+#sample = dataAnalysis.loadData('featSelect_X',id= 100002, index = True).iloc[0,:].to_dict()
+sample = dataAnalysis.loadData(table='featSelect',id= 100002, index = True).drop(columns=['SK_ID_CURR','TARGET']).to_dict('r')[0]
 
 dynamicModel = create_model('dynamicModel',**sample)
 
