@@ -4,5 +4,4 @@ pydantic
 pandas
 numpy
 sklearn
-re
 scipy
