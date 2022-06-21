@@ -4,6 +4,5 @@ pydantic
 pandas
 numpy
 sklearn
-sqlite3
 re
 scipy
