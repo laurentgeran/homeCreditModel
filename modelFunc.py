@@ -5,10 +5,11 @@ from lightgbm import LGBMClassifier
 
 # Scaling 
 from sklearn.preprocessing import RobustScaler
-from sklearn.preprocessing import StandardScaler
+#from sklearn.preprocessing import StandardScaler
 
 # Sampling
-from imblearn.over_sampling import SMOTE 
+from imblearn.over_sampling import SMOTE, ADASYN, BorderlineSMOTE
+from imblearn.under_sampling import RandomUnderSampler 
 
 # Metrics
 from sklearn.metrics import make_scorer
@@ -30,33 +31,38 @@ from hyperopt import fmin
 from hyperopt import tpe
 from hyperopt import STATUS_OK
 
-
-def splitData(X,y):
+def modeling(classifier, X, y, sampling = 0):
     XTrain, XTest, yTrain, yTest = train_test_split(X,y, test_size=0.2)
-    return XTrain, XTest, yTrain, yTest
-
-def modeling(classifier, X, y, overSampling = False):
-    XTrain, XTest, yTrain, yTest=splitData(X,y)
     transformer = RobustScaler()
     XTrain = transformer.fit_transform(XTrain)
     XTest = transformer.transform(XTest)
-    if overSampling:
-        oversampling = SMOTE()
+    if sampling == 1 :
+        oversampling = BorderlineSMOTE(sampling_strategy= 0.66, random_state=1)
         XTrain, yTrain = oversampling.fit_resample(XTrain, yTrain)
-    scoring = {"auc": make_scorer(roc_auc_score), "accuracy": make_scorer(accuracy_score)}
+    elif sampling == -1 :
+        randomundersampling = RandomUnderSampler(sampling_strategy= 0.66, random_state=1)
+        XTrain, yTrain = randomundersampling.fit_resample(XTrain, yTrain)
+    else : 
+        pass
+    auc = make_scorer(roc_auc_score)
+    accuracy = make_scorer(accuracy_score)
+    g_norm_score = make_scorer(customMetric)
+    scoring = {'auc': auc, 'accuracy': accuracy, 'gain':g_norm_score}
     cv = cross_validate(classifier,XTrain, yTrain , cv=4,scoring = scoring)
-    #print(np.mean(cv["test_auc"]))
-    #print(np.mean(cv["test_accuracy"]))
-    classifier.fit(XTrain, yTrain,eval_metric='auc', eval_set=[(XTest, yTest)])
-    yPred=classifier.predict(XTest)
-    print("classification report : ", classification_report(yTest,yPred))
+    print('score auc : {score}'.format(score=np.mean(cv['test_auc'])))
+    print('score accuracy : {score}'.format(score=np.mean(cv['test_accuracy'])))
+    print('score gain : {score}'.format(score=np.mean(cv['test_gain'])))
+    model = classifier.fit(XTrain, yTrain)
+    yPred = classifier.predict(XTest)
+    print('score gain : {score}'.format(score=g_norm_score(model,XTest,yTest)))
+    print('classification report : ', classification_report(yTest,yPred))
 
-    return classifier
+    return model, XTrain, yTrain
 
-def customMetric(y_true, y_pred, fn_value=-100, fp_value=-1, tp_value=10, tn_value=1):
+def customMetric(y, y_pred, fn_value=-10, fp_value=-1, tp_value=10, tn_value=1):
     
     # Matrice de Confusion
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+    tn, fp, fn, tp = confusion_matrix(y, y_pred).ravel()
     
     # gain total
     g = tp*tp_value + tn*tn_value + fp*fp_value + fn*fn_value
@@ -114,11 +120,8 @@ space = {
     'solvability_threshold': hp.quniform('solvability_threshold', 0.0, 1.0, 0.025)
 }
 
-
-best = 1
-
 def f(params):
-    global best
+    best = 1
     loss = hyperopt_train_test(params)
     if loss < best:
         best = loss
