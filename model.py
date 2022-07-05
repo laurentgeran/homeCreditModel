@@ -15,8 +15,20 @@ from skopt import gp_minimize
 # Feature selection
 from boruta import BorutaPy
 
+# Metrics
+from sklearn.metrics import confusion_matrix
+
+# Hyperparameters optimization
+from hyperopt import hp
+from hyperopt import Trials
+from hyperopt import fmin
+from hyperopt import tpe
+
+
 # Serialization
 import pickle
+
+
 
 # don't display warnings
 warnings.filterwarnings("ignore")
@@ -58,14 +70,40 @@ featSelect.to_sql('featSelect', con)
 featSelect_y.to_sql('featSelect_y', con)
 featSelect_X.to_sql('featSelect_X', con)
 
-modelFinal = modelFunc.modeling(LGBMClassifier(), featSelect_X, applicationTrain_y, sampling = 0)
-modelFinal_under = modelFunc.modeling(LGBMClassifier(), featSelect_X, applicationTrain_y, sampling = -1)
-modelFinal_over = modelFunc.modeling(LGBMClassifier(), featSelect_X, applicationTrain_y, sampling = 1)
+model = modelFunc.modeling(LGBMClassifier(), featSelect_X, applicationTrain_y, sampling = 0)
+model_under = modelFunc.modeling(LGBMClassifier(), featSelect_X, applicationTrain_y, sampling = -1)
+model_over = modelFunc.modeling(LGBMClassifier(), featSelect_X, applicationTrain_y, sampling = 1)
 
 # optimisation des hyperparamètres
+space = {
+    'n_estimators': hp.quniform('n_estimators', 200, 800, 200),
+    #'class_weight': hp.choice('class_weight', [None, 'balanced']),
+    'max_depth' : hp.quniform('max_depth', 2, 30, 2),
+    'learning_rate': hp.loguniform('learning_rate', np.log(0.005), np.log(0.2)),
+    'subsample': hp.quniform('subsample', 0.1, 1.0, 0.2),
+    #'colsample_bytree': hp.quniform('colsample_by_tree', 0.6, 1.0, 0.1),
+    'num_leaves': hp.quniform('num_leaves', 4, 100, 4),
+    'reg_alpha': hp.quniform('reg_alpha', 0.1, 1.0, 0.1),
+    'reg_lambda': hp.quniform('reg_lambda', 0.1, 1.0, 0.1),
+    #'solvability_threshold': hp.quniform('solvability_threshold', 0.0, 1.0, 0.025)
+}
+
+trials = Trials()
+best = fmin(modelFunc.f, space, algo=tpe.suggest, max_evals=5, trials=trials)
+
+print('best:')
+print(best)
+
+params = {'learning_rate': 0.06830366370859095, 'max_depth': 22, 'n_estimators': 400, 'num_leaves': 24, 'reg_alpha': 0.4, 'reg_lambda': 0.7000000000000001, 'subsample': 0.6000000000000001}
+
+model = modelFunc.modeling(LGBMClassifier(**params), applicationTrain_X, applicationTrain_y)
+
+y_pred = model.predict(applicationTrain_X)
+
+confusion_matrix(applicationTrain_y,y_pred)
 
 # saving the model
 with open('homecredit_model/clf_feat_under.pkl', 'wb') as output_file:
-    pickle.dump(modelFinal_under[0], output_file)
+    pickle.dump(model_under[0], output_file)
 
 con.close()

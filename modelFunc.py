@@ -25,11 +25,8 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_predict
 
 # Hyperparameters optimization
-from hyperopt import hp
-from hyperopt import Trials
-from hyperopt import fmin
-from hyperopt import tpe
 from hyperopt import STATUS_OK
+
 
 def modeling(classifier, X, y, sampling = 0):
     XTrain, XTest, yTrain, yTest = train_test_split(X,y, test_size=0.2)
@@ -107,7 +104,7 @@ def hyperopt_train_test(params, applicationTrain_X, applicationTrain_y):
     
     return loss
 
-space = {
+"""space = {
     'n_estimators': hp.quniform('n_estimators', 200, 800, 200),
     #'class_weight': hp.choice('class_weight', [None, 'balanced']),
     'max_depth' : hp.quniform('max_depth', 2, 30, 2),
@@ -117,8 +114,8 @@ space = {
     'num_leaves': hp.quniform('num_leaves', 4, 100, 4),
     'reg_alpha': hp.quniform('reg_alpha', 0.1, 1.0, 0.1),
     'reg_lambda': hp.quniform('reg_lambda', 0.1, 1.0, 0.1),
-    'solvability_threshold': hp.quniform('solvability_threshold', 0.0, 1.0, 0.025)
-}
+    #'solvability_threshold': hp.quniform('solvability_threshold', 0.0, 1.0, 0.025)
+}"""
 
 def f(params):
     best = 1

@@ -11,14 +11,6 @@ from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
 
-"""def localLoad(table,cursor):
-    cursor.execute("SELECT * FROM "+table)
-    columns = cursor.description 
-    result = [{columns[index][0]:column for index, column in enumerate(value)} for value in cursor.fetchall()]
-    resultJSON = json.dumps(result)
-    df = pd.read_json(resultJSON,orient ='records')
-    return (df)"""
-
 def localLoad(table,connection,index=False):
     query = "SELECT * FROM "+table
     if index:
