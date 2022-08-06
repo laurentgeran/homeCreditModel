@@ -7,6 +7,5 @@ numpy
 sklearn
 scipy
 shap
-json
 requests
 lightgbm
